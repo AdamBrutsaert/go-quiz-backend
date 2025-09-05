@@ -7,22 +7,22 @@ type Lobby struct {
 	over    bool
 }
 
-func New() Lobby {
-	return Lobby{
+func New() *Lobby {
+	return &Lobby{
 		players: make(map[string]quiz.Player),
 		over:    false,
 	}
 }
 
-func (g Lobby) Players() map[string]quiz.Player {
+func (g *Lobby) Players() map[string]quiz.Player {
 	return g.players
 }
 
-func (g Lobby) AddPlayer(name string) {
+func (g *Lobby) AddPlayer(name string) {
 	g.players[name] = quiz.Player{Name: name}
 }
 
-func (g Lobby) RemovePlayer(name string) {
+func (g *Lobby) RemovePlayer(name string) {
 	delete(g.players, name)
 }
 
@@ -30,6 +30,6 @@ func (g *Lobby) Start() {
 	g.over = true
 }
 
-func (g Lobby) Over() bool {
+func (g *Lobby) Over() bool {
 	return g.over
 }

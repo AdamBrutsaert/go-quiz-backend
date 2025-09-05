@@ -4,36 +4,38 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
-	"github.com/gorilla/websocket"
 )
 
-func (s *Server) handleConnection(conn *websocket.Conn) {
-	defer conn.Close()
-
-	for {
-		// Read message from WebSocket
-		messageType, message, err := conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
-			}
-			break
-		}
-
-		log.Printf("Received message of type %d: %s", messageType, message)
-	}
-}
-
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	// Get the code query parameter
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		http.Error(w, "Missing code parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the lobby exists
+	if _, exists := s.lobbies[code]; !exists {
+		http.Error(w, "Lobby not found", http.StatusNotFound)
+		return
+	}
+
+	// Upgrade the connection to WebSocket
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Could not open websocket connection: %v", err)
 		return
 	}
 
-	go s.handleConnection(conn)
+	// Create a new client with a unique ID
+	c := &client{
+		conn: conn,
+		id:   generateClientID(),
+		code: code,
+	}
+
+	// Run the client in a goroutine
+	go c.run(s)
 }
 
 func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
@@ -42,10 +44,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := s.generateLobbyCode()
-
-	newLobby := lobby.New()
-	s.lobbies[code] = newLobby
+	code := s.CreateLobby()
 
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{"code": code}

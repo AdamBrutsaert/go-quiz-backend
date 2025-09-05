@@ -3,6 +3,8 @@ package server
 import (
 	"crypto/rand"
 	"log"
+
+	"github.com/google/uuid"
 )
 
 func (s *Server) generateLobbyCode() string {
@@ -23,4 +25,8 @@ func (s *Server) generateLobbyCode() string {
 			return code
 		}
 	}
+}
+
+func generateClientID() string {
+	return uuid.New().String()
 }

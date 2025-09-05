@@ -9,7 +9,7 @@ import (
 
 type Server struct {
 	upgrader websocket.Upgrader
-	lobbies  map[string]lobby.Lobby
+	lobbies  map[string]*lobby.Lobby
 }
 
 func New() *Server {
@@ -21,7 +21,7 @@ func New() *Server {
 				return true
 			},
 		},
-		lobbies: make(map[string]lobby.Lobby),
+		lobbies: make(map[string]*lobby.Lobby),
 	}
 }
 
@@ -42,4 +42,11 @@ func (s *Server) createServer() *http.Server {
 
 func (s *Server) Run() error {
 	return s.createServer().ListenAndServe()
+}
+
+func (s *Server) CreateLobby() string {
+	code := s.generateLobbyCode()
+	s.lobbies[code] = lobby.New()
+
+	return code
 }
