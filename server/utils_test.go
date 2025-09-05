@@ -11,7 +11,7 @@ func TestGenerateLobbyCode(t *testing.T) {
 
 	// Test that generated codes are 5 characters long
 	for i := 0; i < 100; i++ {
-		code := s.generateLobbyCode()
+		code := s.generateQuizCode()
 		if len(code) != 5 {
 			t.Errorf("Expected code length 5, got %d for code '%s'", len(code), code)
 		}

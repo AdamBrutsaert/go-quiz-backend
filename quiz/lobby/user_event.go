@@ -1,29 +1,17 @@
-package command
+package lobby
 
 import (
 	"encoding/json"
 
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
 )
 
-type Command interface {
+type UserEvent interface {
 	Kind() string
-	Handle(g *lobby.Lobby) error
+	Handle(id string, lobby *Lobby) (quiz.Phase, error)
 }
 
-func Serialize(command Command) ([]byte, error) {
-	var base struct {
-		Kind string  `json:"kind"`
-		Data Command `json:"data"`
-	}
-
-	base.Kind = command.Kind()
-	base.Data = command
-
-	return json.Marshal(base)
-}
-
-func Deserialize(data []byte) (Command, error) {
+func deserializeUserEvent(data []byte) (UserEvent, error) {
 	var base struct {
 		Kind string          `json:"kind"`
 		Data json.RawMessage `json:"data"`
@@ -34,14 +22,14 @@ func Deserialize(data []byte) (Command, error) {
 	}
 
 	switch base.Kind {
-	case registerCommandKind:
-		var event Register
+	case userEventRegisterKind:
+		var event UserEventRegister
 		if err := json.Unmarshal(base.Data, &event); err != nil {
 			return nil, err
 		}
 		return event, nil
-	case startCommandKind:
-		var event Start
+	case userEventStartKind:
+		var event UserEventStart
 		if err := json.Unmarshal(base.Data, &event); err != nil {
 			return nil, err
 		}

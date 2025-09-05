@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Server) generateLobbyCode() string {
+func (s *Server) generateQuizCode() string {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, 5)
 	for {
@@ -21,7 +21,7 @@ func (s *Server) generateLobbyCode() string {
 		}
 
 		code := string(b)
-		if _, exists := s.lobbies[code]; !exists {
+		if _, exists := s.quizes[code]; !exists {
 			return code
 		}
 	}

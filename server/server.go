@@ -3,13 +3,13 @@ package server
 import (
 	"net/http"
 
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
 	"github.com/gorilla/websocket"
 )
 
 type Server struct {
 	upgrader websocket.Upgrader
-	lobbies  map[string]*lobby.Lobby
+	quizes   map[string]quiz.Phase
 }
 
 func New() *Server {
@@ -21,7 +21,7 @@ func New() *Server {
 				return true
 			},
 		},
-		lobbies: make(map[string]*lobby.Lobby),
+		quizes: make(map[string]quiz.Phase),
 	}
 }
 
@@ -44,9 +44,10 @@ func (s *Server) Run() error {
 	return s.createServer().ListenAndServe()
 }
 
-func (s *Server) CreateLobby() string {
-	code := s.generateLobbyCode()
-	s.lobbies[code] = lobby.New()
+func (s *Server) SetQuiz(code string, phase quiz.Phase) {
+	s.quizes[code] = phase
+}
 
-	return code
+func (s *Server) Quiz(code string) quiz.Phase {
+	return s.quizes[code]
 }

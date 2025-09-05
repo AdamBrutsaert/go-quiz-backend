@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
 )
 
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +17,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify the lobby exists
-	if _, exists := s.lobbies[code]; !exists {
+	if _, exists := s.quizes[code]; !exists {
 		http.Error(w, "Lobby not found", http.StatusNotFound)
 		return
 	}
@@ -27,15 +29,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new client with a unique ID
-	c := &client{
-		conn: conn,
-		id:   generateClientID(),
-		code: code,
-	}
-
-	// Run the client in a goroutine
-	go c.run(s)
+	// Create a new client with a unique ID and run it
+	go newClient(generateClientID(), conn, code).run(s)
 }
 
 func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +39,8 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := s.CreateLobby()
+	code := s.generateQuizCode()
+	s.SetQuiz(code, lobby.New())
 
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{"code": code}

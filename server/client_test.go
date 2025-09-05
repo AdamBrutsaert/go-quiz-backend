@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,7 +17,8 @@ func TestClientRunTimeout(t *testing.T) {
 	defer ts.Close()
 
 	// Create a lobby first
-	testCode := server.CreateLobby()
+	testCode := server.generateQuizCode()
+	server.SetQuiz(testCode, lobby.New())
 
 	u, _ := url.Parse(ts.URL)
 	u.Scheme = "ws"

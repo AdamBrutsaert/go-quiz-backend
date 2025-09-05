@@ -1,35 +1,25 @@
 package lobby
 
-import "github.com/AdamBrutsaert/go-quiz-backend/quiz"
+import (
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
+)
 
 type Lobby struct {
+	owner   string
 	players map[string]quiz.Player
-	over    bool
 }
 
 func New() *Lobby {
 	return &Lobby{
+		owner:   "",
 		players: make(map[string]quiz.Player),
-		over:    false,
 	}
 }
 
-func (g *Lobby) Players() map[string]quiz.Player {
-	return g.players
-}
-
-func (g *Lobby) AddPlayer(name string) {
-	g.players[name] = quiz.Player{Name: name}
-}
-
-func (g *Lobby) RemovePlayer(name string) {
-	delete(g.players, name)
-}
-
-func (g *Lobby) Start() {
-	g.over = true
-}
-
-func (g *Lobby) Over() bool {
-	return g.over
+func (l *Lobby) Handle(id string, message []byte) (quiz.Phase, error) {
+	event, err := deserializeUserEvent(message)
+	if err != nil {
+		return nil, err
+	}
+	return event.Handle(id, l)
 }
