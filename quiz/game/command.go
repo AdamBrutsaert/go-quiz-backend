@@ -6,7 +6,6 @@ import (
 )
 
 type Command interface {
-	Kind() string
 	Handle(id string, lobby *Game) error
 }
 

@@ -12,10 +12,6 @@ type CommandRegister struct {
 	Name string `json:"name"`
 }
 
-func (e CommandRegister) Kind() string {
-	return commandRegisterKind
-}
-
 func (e CommandRegister) Handle(id string, lobby *Lobby) error {
 	// Validate name
 	if e.Name == "" {
@@ -41,6 +37,9 @@ func (e CommandRegister) Handle(id string, lobby *Lobby) error {
 	if lobby.owner == "" {
 		lobby.owner = id
 	}
+
+	lobby.notifyOne(id, EventRegistered{ID: id, Name: e.Name})
+	lobby.notifyAll(EventJoined{Name: e.Name})
 
 	return nil
 }

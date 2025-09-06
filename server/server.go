@@ -69,6 +69,7 @@ func (s *Server) createMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", s.handleWebSocket)
 	mux.HandleFunc("/lobby", s.handleCreateLobby)
+	mux.HandleFunc("/health", s.handleHealthCheck)
 	return mux
 }
 

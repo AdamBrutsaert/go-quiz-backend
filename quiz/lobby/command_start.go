@@ -10,10 +10,6 @@ const commandStartKind = "start"
 
 type CommandStart struct{}
 
-func (e CommandStart) Kind() string {
-	return commandStartKind
-}
-
 func (e CommandStart) Handle(id string, lobby *Lobby) error {
 	// Only the owner can start the game
 	if id != lobby.owner {

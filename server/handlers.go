@@ -46,3 +46,8 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
 	response := map[string]string{"code": code}
 	json.NewEncoder(w).Encode(response)
 }
+
+func (s *Server) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
