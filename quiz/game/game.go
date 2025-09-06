@@ -1,23 +1,33 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
 )
 
 type Game struct {
-	players map[string]quiz.Player
+	notifier quiz.Notifier
+	players  map[string]quiz.Player
 }
 
-func New(players map[string]quiz.Player) *Game {
+func New(notifier quiz.Notifier, players map[string]quiz.Player) *Game {
 	return &Game{
-		players: players,
+		notifier: notifier,
+		players:  players,
 	}
 }
 
-func (g *Game) Handle(id string, message []byte) (quiz.Phase, error) {
-	event, err := deserializeUserEvent(message)
+func (l *Game) Handle(id string, message []byte) {
+	event, err := deserializeCommand(message)
 	if err != nil {
-		return nil, err
+		fmt.Printf("error deserializing command: %v\n", err)
+		return
 	}
-	return event.Handle(id, g)
+
+	err = event.Handle(id, l)
+	if err != nil {
+		fmt.Printf("error handling event: %v\n", err)
+		return
+	}
 }

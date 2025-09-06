@@ -21,7 +21,7 @@ func (s *Server) generateQuizCode() string {
 		}
 
 		code := string(b)
-		if _, exists := s.quizes[code]; !exists {
+		if _, exists := s.quizzes[code]; !exists {
 			return code
 		}
 	}

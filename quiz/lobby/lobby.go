@@ -1,25 +1,36 @@
 package lobby
 
 import (
+	"fmt"
+
 	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
 )
 
 type Lobby struct {
-	owner   string
-	players map[string]quiz.Player
+	notifier quiz.Notifier
+	owner    string
+	players  map[string]quiz.Player
 }
 
-func New() *Lobby {
+func New(notifier quiz.Notifier) *Lobby {
 	return &Lobby{
-		owner:   "",
-		players: make(map[string]quiz.Player),
+		notifier: notifier,
+		owner:    "",
+		players:  make(map[string]quiz.Player),
 	}
 }
 
-func (l *Lobby) Handle(id string, message []byte) (quiz.Phase, error) {
-	event, err := deserializeUserEvent(message)
+func (l *Lobby) Handle(id string, message []byte) {
+	event, err := deserializeCommand(message)
 	if err != nil {
-		return nil, err
+		fmt.Printf("error deserializing command: %v\n", err)
+		return
 	}
-	return event.Handle(id, l)
+
+	fmt.Printf("Handling event: %T\n", event)
+	err = event.Handle(id, l)
+	if err != nil {
+		fmt.Printf("error handling event: %v\n", err)
+		return
+	}
 }

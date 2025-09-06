@@ -37,7 +37,7 @@ func TestCreateLobby(t *testing.T) {
 	}
 
 	// Verify the lobby was stored in the server
-	if _, exists := s.quizes[code]; !exists {
+	if _, exists := s.quizzes[code]; !exists {
 		t.Error("Lobby should be stored in server")
 	}
 }

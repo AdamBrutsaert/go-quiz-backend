@@ -2,16 +2,15 @@ package game
 
 import (
 	"encoding/json"
-
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
+	"errors"
 )
 
-type UserEvent interface {
+type Command interface {
 	Kind() string
-	Handle(id string, lobby *Game) (quiz.Phase, error)
+	Handle(id string, lobby *Game) error
 }
 
-func deserializeUserEvent(data []byte) (UserEvent, error) {
+func deserializeCommand(data []byte) (Command, error) {
 	var base struct {
 		Kind string          `json:"kind"`
 		Data json.RawMessage `json:"data"`
@@ -23,6 +22,6 @@ func deserializeUserEvent(data []byte) (UserEvent, error) {
 
 	switch base.Kind {
 	default:
-		return nil, nil
+		return nil, errors.New("unknown command kind: " + base.Kind)
 	}
 }

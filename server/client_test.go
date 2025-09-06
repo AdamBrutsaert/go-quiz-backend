@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
 	"github.com/gorilla/websocket"
 )
 
@@ -17,8 +16,8 @@ func TestClientRunTimeout(t *testing.T) {
 	defer ts.Close()
 
 	// Create a lobby first
-	testCode := server.generateQuizCode()
-	server.SetQuiz(testCode, lobby.New())
+	testCode := server.createQuiz()
+	quiz := server.quizzes[testCode]
 
 	u, _ := url.Parse(ts.URL)
 	u.Scheme = "ws"
@@ -41,7 +40,7 @@ func TestClientRunTimeout(t *testing.T) {
 	// Test that run method can be called without hanging
 	done := make(chan bool, 1)
 	go func() {
-		c.run(server)
+		c.run(quiz)
 		done <- true
 	}()
 

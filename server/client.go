@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -36,28 +37,19 @@ func (c *client) handleRead() {
 	}
 }
 
-func (c *client) run(server *Server) {
+func (c *client) run(quiz *Quiz) {
 	defer c.conn.Close()
 	go c.handleRead()
 
 	for {
+		fmt.Println("Waiting for message from client...")
 		select {
 		case msg := <-c.readChannel:
-			quiz := server.Quiz(c.code)
-			if quiz == nil {
-				log.Printf("Quiz not found for code: %s", c.code)
-				return
-			}
+			fmt.Println("Received message from client:", string(msg))
 
-			phase, err := quiz.Handle(c.id, msg)
-			if err != nil {
-				log.Printf("Error handling message: %v", err)
-				continue
-			}
-
-			if phase != nil {
-				server.SetQuiz(c.code, phase)
-			}
+			quiz.phaseHandleMutex.Lock()
+			quiz.phase.Handle(c.id, msg)
+			quiz.phaseHandleMutex.Unlock()
 
 		case err := <-c.errChannel:
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {

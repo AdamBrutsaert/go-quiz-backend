@@ -1,27 +1,36 @@
 package lobby
 
-import "github.com/AdamBrutsaert/go-quiz-backend/quiz"
+import (
+	"errors"
 
-const userEventRegisterKind = "register"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
+)
 
-type UserEventRegister struct {
+const commandRegisterKind = "register"
+
+type CommandRegister struct {
 	Name string `json:"name"`
 }
 
-func (e UserEventRegister) Kind() string {
-	return userEventRegisterKind
+func (e CommandRegister) Kind() string {
+	return commandRegisterKind
 }
 
-func (e UserEventRegister) Handle(id string, lobby *Lobby) (quiz.Phase, error) {
+func (e CommandRegister) Handle(id string, lobby *Lobby) error {
+	// Validate name
+	if e.Name == "" {
+		return errors.New("name cannot be empty")
+	}
+
 	// If the user is already registered, do nothing
 	if _, exists := lobby.players[id]; exists {
-		return nil, nil
+		return errors.New("user already registered")
 	}
 
 	// If there is already an user with the same name, do nothing
 	for _, player := range lobby.players {
 		if player.Name == e.Name {
-			return nil, nil
+			return errors.New("name already taken")
 		}
 	}
 
@@ -33,5 +42,5 @@ func (e UserEventRegister) Handle(id string, lobby *Lobby) (quiz.Phase, error) {
 		lobby.owner = id
 	}
 
-	return nil, nil
+	return nil
 }
