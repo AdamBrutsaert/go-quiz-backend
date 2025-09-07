@@ -1,34 +1,33 @@
 package server
 
 import (
-	"fmt"
 	"log"
-	"sync"
 	"time"
 
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/command"
 	"github.com/gorilla/websocket"
 )
 
 type client struct {
-	conn        *websocket.Conn
-	id          string
-	code        string
-	readChannel chan []byte
-	errChannel  chan error
-	writeMutex  sync.Mutex
+	conn *websocket.Conn
+	id   string
+
+	readChannel  chan []byte
+	writeChannel chan []byte
+	errChannel   chan error
 }
 
-func newClient(id string, conn *websocket.Conn, code string) *client {
+func newClient(conn *websocket.Conn, id string) *client {
 	return &client{
-		conn:        conn,
-		id:          id,
-		code:        code,
-		readChannel: make(chan []byte),
-		errChannel:  make(chan error),
+		conn:         conn,
+		id:           id,
+		readChannel:  make(chan []byte, 10),
+		writeChannel: make(chan []byte, 10),
+		errChannel:   make(chan error),
 	}
 }
 
-func (c *client) handleRead() {
+func (c *client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -39,32 +38,45 @@ func (c *client) handleRead() {
 	}
 }
 
-func (c *client) run(channel chan ClientCommand) {
-	defer c.conn.Close()
-	go c.handleRead()
+func (c *client) write(message []byte) {
+	c.writeChannel <- message
+}
 
+func (c *client) run(commandsChannel chan clientCommand, disconnectChannel chan string) {
+	defer c.conn.Close()
+	go c.readPump() // will be cleaned up by the defer above
+
+outer:
 	for {
 		select {
 		case msg := <-c.readChannel:
-			fmt.Printf("Received message from client %s: %s\n", c.id, string(msg))
-			channel <- ClientCommand{id: c.id, message: msg}
+			cmd, err := command.Deserialize(msg)
+			if err != nil {
+				log.Printf("[%s] Error deserializing command: %v\n", c.id, err)
+				continue
+			}
+
+			commandsChannel <- clientCommand{id: c.id, cmd: cmd}
+
+		case msg := <-c.writeChannel:
+			err := c.conn.WriteMessage(websocket.TextMessage, msg)
+			if err != nil {
+				log.Printf("[%s] Error writing message: %v\n", c.id, err)
+				break outer
+			}
 
 		case err := <-c.errChannel:
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("WebSocket error: %v", err)
+				log.Printf("[%s] WebSocket error: %v", c.id, err)
 			}
-			return
+			break outer
 
 		case <-time.After(60 * time.Second):
-			log.Printf("Client %s timed out due to inactivity", c.id)
-			return
+			log.Printf("[%s] Timed out due to inactivity", c.id)
+			break outer
 		}
 	}
-}
 
-func (c *client) send(message []byte) error {
-	c.writeMutex.Lock()
-	defer c.writeMutex.Unlock()
-
-	return c.conn.WriteMessage(websocket.TextMessage, message)
+	log.Printf("[%s] Connection closed", c.id)
+	disconnectChannel <- c.id
 }

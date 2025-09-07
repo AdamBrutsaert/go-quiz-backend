@@ -1,5 +1,6 @@
 package quiz
 
 type Player struct {
-	Name string
+	Name  string
+	Score int
 }

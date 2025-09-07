@@ -1,64 +1,103 @@
 package server
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz"
-	"github.com/AdamBrutsaert/go-quiz-backend/quiz/lobby"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/command"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/event"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/state"
+	"github.com/google/uuid"
 )
 
-type ClientCommand struct {
-	id      string
-	message []byte
+type clientCommand struct {
+	id  string
+	cmd state.Command
 }
 
-type Runner struct {
-	phase           quiz.Phase
-	commandsChannel chan ClientCommand
-	phaseChannel    chan quiz.Phase
-	clients         map[string]*client
+type runner struct {
+	state   state.State
+	clients map[string]*client
+
+	commandsChannel   chan clientCommand
+	disconnectChannel chan string
+	stateChannel      chan state.State
 }
 
-func newRunner() *Runner {
-	runner := &Runner{
-		commandsChannel: make(chan ClientCommand, 100),
-		phaseChannel:    make(chan quiz.Phase, 1),
-		clients:         make(map[string]*client),
+func newRunner() *runner {
+	runner := &runner{
+		clients:           make(map[string]*client),
+		commandsChannel:   make(chan clientCommand, 100),
+		disconnectChannel: make(chan string, 10),
+		stateChannel:      make(chan state.State, 1),
 	}
-
-	runner.phase = lobby.New(runner)
+	runner.state = state.NewLobby(runner)
 	return runner
 }
 
-func (r *Runner) run() {
+func (r *runner) NotifyNewState(s state.State) {
+	r.stateChannel <- s
+}
+
+func (r *runner) NotifyClient(clientID string, ev event.Event) {
+	client, exists := r.clients[clientID]
+	if !exists {
+		log.Printf("Client %s not found for notification\n", clientID)
+		return
+	}
+
+	serialized, err := event.Serialize(ev)
+	if err != nil {
+		log.Printf("Error serializing event %v: %v\n", ev, err)
+		return
+	}
+
+	client.write(serialized)
+}
+
+func (r *runner) NotifyAllClients(ev event.Event) {
+	serialized, err := event.Serialize(ev)
+	if err != nil {
+		log.Printf("Error serializing event %v: %v\n", ev, err)
+		return
+	}
+
+	for _, client := range r.clients {
+		client.write(serialized)
+	}
+}
+
+func (r *runner) NotifyAllClientsExcept(clientID string, ev event.Event) {
+	serialized, err := event.Serialize(ev)
+	if err != nil {
+		log.Printf("Error serializing event %v: %v\n", ev, err)
+		return
+	}
+
+	for _, client := range r.clients {
+		if client.id == clientID {
+			continue
+		}
+		client.write(serialized)
+	}
+}
+
+func (r *runner) generateClientID() string {
+	return uuid.New().String()
+}
+
+func (r *runner) run() {
+	r.state.Start()
+
 	for {
 		select {
 		case cmd := <-r.commandsChannel:
-			r.phase.Handle(cmd.id, cmd.message)
-		case phase := <-r.phaseChannel:
-			r.phase = phase
-		}
-	}
-}
-
-func (r *Runner) NotifyPhase(phase quiz.Phase) {
-	r.phaseChannel <- phase
-}
-
-func (r *Runner) NotifyOne(id string, message []byte) {
-	if client, ok := r.clients[id]; ok {
-		err := client.send(message)
-		if err != nil {
-			fmt.Printf("Error sending message to client %s: %v\n", id, err)
-		}
-	}
-}
-
-func (r *Runner) NotifyAll(message []byte) {
-	for _, client := range r.clients {
-		err := client.send(message)
-		if err != nil {
-			fmt.Printf("Error sending message to client %s: %v\n", client.id, err)
+			r.state.Apply(cmd.cmd, cmd.id)
+		case clientID := <-r.disconnectChannel:
+			delete(r.clients, clientID)
+			r.state.Apply(command.Disconnect{}, clientID)
+		case state := <-r.stateChannel:
+			r.state = state
+			r.state.Start()
 		}
 	}
 }

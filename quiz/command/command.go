@@ -1,15 +1,18 @@
-package lobby
+package command
 
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/state"
 )
 
-type Command interface {
-	Handle(id string, lobby *Lobby) error
-}
+const (
+	commandKindRegister = "register"
+	commandKindStart    = "start"
+)
 
-func deserializeCommand(data []byte) (Command, error) {
+func Deserialize(data []byte) (state.Command, error) {
 	var base struct {
 		Kind string          `json:"kind"`
 		Data json.RawMessage `json:"data"`
@@ -20,14 +23,14 @@ func deserializeCommand(data []byte) (Command, error) {
 	}
 
 	switch base.Kind {
-	case commandRegisterKind:
-		var event CommandRegister
+	case commandKindRegister:
+		var event Register
 		if err := json.Unmarshal(base.Data, &event); err != nil {
 			return nil, err
 		}
 		return event, nil
-	case commandStartKind:
-		var event CommandStart
+	case commandKindStart:
+		var event Start
 		if err := json.Unmarshal(base.Data, &event); err != nil {
 			return nil, err
 		}

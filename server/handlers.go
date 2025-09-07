@@ -6,6 +6,24 @@ import (
 	"net/http"
 )
 
+func (s *Server) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	code := s.createQuiz()
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"code": code}
+	json.NewEncoder(w).Encode(response)
+}
+
 func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	// Get the code query parameter
 	code := r.URL.Query().Get("code")
@@ -28,26 +46,8 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := newClient(generateClientID(), conn, code)
+	client := newClient(conn, quiz.generateClientID())
 	quiz.clients[client.id] = client
 
-	go client.run(quiz.commandsChannel)
-}
-
-func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	code := s.newQuiz()
-
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{"code": code}
-	json.NewEncoder(w).Encode(response)
-}
-
-func (s *Server) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	go client.run(quiz.commandsChannel, quiz.disconnectChannel)
 }

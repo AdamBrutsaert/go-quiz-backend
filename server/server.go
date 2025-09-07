@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/rand"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -8,7 +10,7 @@ import (
 
 type Server struct {
 	upgrader websocket.Upgrader
-	quizzes  map[string]*Runner
+	quizzes  map[string]*runner
 }
 
 func New() *Server {
@@ -20,15 +22,15 @@ func New() *Server {
 				return true
 			},
 		},
-		quizzes: make(map[string]*Runner),
+		quizzes: make(map[string]*runner),
 	}
 }
 
 func (s *Server) createMux() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/ws", s.handleWebSocket)
-	mux.HandleFunc("/lobby", s.handleCreateLobby)
 	mux.HandleFunc("/health", s.handleHealthCheck)
+	mux.HandleFunc("/lobby", s.handleCreateLobby)
+	mux.HandleFunc("/ws", s.handleWebSocket)
 	return mux
 }
 
@@ -40,14 +42,34 @@ func (s *Server) createServer() *http.Server {
 	}
 }
 
-func (s *Server) Run() error {
-	return s.createServer().ListenAndServe()
+func (s *Server) generateQuizCode() string {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, 5)
+	for {
+		if _, err := rand.Read(b); err != nil {
+			log.Printf("Error generating random bytes: %v", err)
+			continue
+		}
+
+		for i := range b {
+			b[i] = charset[b[i]%byte(len(charset))]
+		}
+
+		code := string(b)
+		if _, exists := s.quizzes[code]; !exists {
+			return code
+		}
+	}
 }
 
-func (s *Server) newQuiz() string {
+func (s *Server) createQuiz() string {
 	code := s.generateQuizCode()
 	runner := newRunner()
 	s.quizzes[code] = runner
 	go runner.run()
 	return code
+}
+
+func (s *Server) Run() error {
+	return s.createServer().ListenAndServe()
 }
