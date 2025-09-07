@@ -36,9 +36,9 @@ func TestCreateLobby(t *testing.T) {
 		t.Errorf("Expected code length 5, got %d", len(code))
 	}
 
-	// Verify the lobby was stored in the server
+	// Verify the runner was stored in the server
 	if _, exists := s.quizzes[code]; !exists {
-		t.Error("Lobby should be stored in server")
+		t.Error("Runner should be stored in server")
 	}
 }
 

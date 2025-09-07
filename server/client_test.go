@@ -15,8 +15,8 @@ func TestClientRunTimeout(t *testing.T) {
 	ts := httptest.NewServer(server.createMux())
 	defer ts.Close()
 
-	// Create a lobby first
-	testCode := server.createQuiz()
+	// Create a quiz first
+	testCode := server.newQuiz()
 	quiz := server.quizzes[testCode]
 
 	u, _ := url.Parse(ts.URL)
@@ -40,7 +40,7 @@ func TestClientRunTimeout(t *testing.T) {
 	// Test that run method can be called without hanging
 	done := make(chan bool, 1)
 	go func() {
-		c.run(quiz)
+		c.run(quiz.commandsChannel)
 		done <- true
 	}()
 

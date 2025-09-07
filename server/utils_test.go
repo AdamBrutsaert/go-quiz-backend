@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestGenerateLobbyCode(t *testing.T) {
+func TestGenerateQuizCode(t *testing.T) {
 	s := New()
 
 	// Test that generated codes are 5 characters long

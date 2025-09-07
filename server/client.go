@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -14,6 +15,7 @@ type client struct {
 	code        string
 	readChannel chan []byte
 	errChannel  chan error
+	writeMutex  sync.Mutex
 }
 
 func newClient(id string, conn *websocket.Conn, code string) *client {
@@ -37,19 +39,15 @@ func (c *client) handleRead() {
 	}
 }
 
-func (c *client) run(quiz *Quiz) {
+func (c *client) run(channel chan ClientCommand) {
 	defer c.conn.Close()
 	go c.handleRead()
 
 	for {
-		fmt.Println("Waiting for message from client...")
 		select {
 		case msg := <-c.readChannel:
-			fmt.Println("Received message from client:", string(msg))
-
-			quiz.phaseHandleMutex.Lock()
-			quiz.phase.Handle(c.id, msg)
-			quiz.phaseHandleMutex.Unlock()
+			fmt.Printf("Received message from client %s: %s\n", c.id, string(msg))
+			channel <- ClientCommand{id: c.id, message: msg}
 
 		case err := <-c.errChannel:
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -65,5 +63,8 @@ func (c *client) run(quiz *Quiz) {
 }
 
 func (c *client) send(message []byte) error {
+	c.writeMutex.Lock()
+	defer c.writeMutex.Unlock()
+
 	return c.conn.WriteMessage(websocket.TextMessage, message)
 }

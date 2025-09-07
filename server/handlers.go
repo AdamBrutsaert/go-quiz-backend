@@ -14,10 +14,10 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the lobby exists
+	// Verify the quiz exists
 	quiz, exists := s.quizzes[code]
 	if !exists {
-		http.Error(w, "Lobby not found", http.StatusNotFound)
+		http.Error(w, "Quiz not found", http.StatusNotFound)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	client := newClient(generateClientID(), conn, code)
 	quiz.clients[client.id] = client
 
-	go client.run(quiz)
+	go client.run(quiz.commandsChannel)
 }
 
 func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	code := s.createQuiz()
+	code := s.newQuiz()
 
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]string{"code": code}
