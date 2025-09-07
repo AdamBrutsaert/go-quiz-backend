@@ -22,6 +22,6 @@ func (l *Lobby) Start() error {
 	return nil
 }
 
-func (l *Lobby) Apply(command Command, clientID string) error {
-	return command.ExecuteLobby(l, clientID)
+func (l *Lobby) Apply(command Command, clientID string) {
+	command.ExecuteLobby(l, clientID)
 }

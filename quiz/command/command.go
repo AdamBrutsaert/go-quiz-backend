@@ -24,17 +24,17 @@ func Deserialize(data []byte) (state.Command, error) {
 
 	switch base.Kind {
 	case commandKindRegister:
-		var event Register
-		if err := json.Unmarshal(base.Data, &event); err != nil {
+		var cmd Register
+		if err := json.Unmarshal(base.Data, &cmd); err != nil {
 			return nil, err
 		}
-		return event, nil
+		return cmd, nil
 	case commandKindStart:
-		var event Start
-		if err := json.Unmarshal(base.Data, &event); err != nil {
+		var cmd Start
+		if err := json.Unmarshal(base.Data, &cmd); err != nil {
 			return nil, err
 		}
-		return event, nil
+		return cmd, nil
 	default:
 		return nil, errors.New("unknown command kind: " + base.Kind)
 	}

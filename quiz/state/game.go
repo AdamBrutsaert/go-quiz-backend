@@ -24,6 +24,6 @@ func (g *Game) Start() error {
 	return nil
 }
 
-func (g *Game) Apply(command Command, clientID string) error {
-	return command.ExecuteGame(g, clientID)
+func (g *Game) Apply(command Command, clientID string) {
+	command.ExecuteGame(g, clientID)
 }

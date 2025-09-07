@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/AdamBrutsaert/go-quiz-backend/quiz/command"
+	"github.com/AdamBrutsaert/go-quiz-backend/quiz/event"
 	"github.com/gorilla/websocket"
 )
 
@@ -53,6 +54,11 @@ outer:
 			cmd, err := command.Deserialize(msg)
 			if err != nil {
 				log.Printf("[%s] Error deserializing command: %v\n", c.id, err)
+				if serializedEvent, err := event.Serialize(event.ErrMalformedCommand); err != nil {
+					c.writeChannel <- serializedEvent
+				} else {
+					log.Printf("[%s] Error serializing error event: %v\n", c.id, err)
+				}
 				continue
 			}
 

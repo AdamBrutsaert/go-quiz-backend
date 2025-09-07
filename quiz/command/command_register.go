@@ -12,18 +12,21 @@ type Register struct {
 	Name string `json:"name"`
 }
 
-func (e Register) ExecuteLobby(lobby *state.Lobby, clientID string) error {
+func (e Register) ExecuteLobby(lobby *state.Lobby, clientID string) {
 	if e.Name == "" {
-		return quiz.ErrInvalidName
+		lobby.EventHandler.NotifyClient(clientID, event.ErrInvalidName)
+		return
 	}
 
 	if _, exists := lobby.Players[clientID]; exists {
-		return quiz.ErrAlreadyRegistered
+		lobby.EventHandler.NotifyClient(clientID, event.ErrAlreadyRegistered)
+		return
 	}
 
 	for _, player := range lobby.Players {
 		if player.Name == e.Name {
-			return quiz.ErrNameAlreadyTaken
+			lobby.EventHandler.NotifyClient(clientID, event.ErrNameAlreadyTaken)
+			return
 		}
 	}
 
@@ -41,10 +44,8 @@ func (e Register) ExecuteLobby(lobby *state.Lobby, clientID string) error {
 		lobby.EventHandler.NotifyAllClients(event.OwnerChanged{Name: e.Name})
 		log.Printf("[%s][%s] Became the owner", clientID, e.Name)
 	}
-
-	return nil
 }
 
-func (e Register) ExecuteGame(game *state.Game, clientID string) error {
-	return quiz.ErrInvalidCommand
+func (e Register) ExecuteGame(game *state.Game, clientID string) {
+	game.EventHandler.NotifyClient(clientID, event.ErrInvalidCommand)
 }

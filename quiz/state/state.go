@@ -3,8 +3,8 @@ package state
 import "github.com/AdamBrutsaert/go-quiz-backend/quiz/event"
 
 type Command interface {
-	ExecuteGame(game *Game, clientID string) error
-	ExecuteLobby(lobby *Lobby, clientID string) error
+	ExecuteGame(game *Game, clientID string)
+	ExecuteLobby(lobby *Lobby, clientID string)
 }
 
 type EventHandler interface {
@@ -16,5 +16,5 @@ type EventHandler interface {
 
 type State interface {
 	Start() error
-	Apply(command Command, clientID string) error
+	Apply(command Command, clientID string)
 }
